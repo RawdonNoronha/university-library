@@ -1,5 +1,4 @@
 "use server";
-
 import { db } from "@/database/drizzle";
 import { eq } from "drizzle-orm";
 import { users } from "@/database/schema";
@@ -8,6 +7,8 @@ import { signIn } from "@/auth";
 import ratelimit from "../ratelimit";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { worflowClient } from "../workflow";
+import config from "../config";
 
 export const signInWithCredentials = async (
     params: Pick<AuthCredentials, "email" | "password">,
@@ -67,6 +68,13 @@ export const signUp = async (params: AuthCredentials) => {
             universityId,
             universityCard,
         });
+        await worflowClient.trigger({
+            url: `${config.env.prodApiEndpoint}/api/workflows/onboarding`,
+            body:{
+                email,
+                fullName
+            },
+        })
         await signInWithCredentials({ email, password });
         return { success: true, message: 'User registered successfully' };
     }
